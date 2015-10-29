@@ -1,8 +1,8 @@
 .DS_Store
-Temp
-Assets/Gizmos/
-Assets/LeapMotion/
-Assets/LeapMotion+OVR/
-Assets/OVR/
-Assets/Plugins/
+JuegoLeap/Temp
+JuegoLeap/Assets/Gizmos/
+JuegoLeap/Assets/LeapMotion/
+JuegoLeap/Assets/LeapMotion+OVR/
+JuegoLeap/Assets/OVR/
+JuegoLeap/Assets/Plugins/
 
