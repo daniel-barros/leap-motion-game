@@ -27,7 +27,7 @@ using System.Collections;
 using Leap;
 
 enum GameState {
-	NoHand, SettingUp, PreGestureTutorial, GestureTutorial, Playing
+	NoHand, Menu, SettingUp, PreGestureTutorial, GestureTutorial, Playing
 }
 
 // This class handles the game Logic.
@@ -77,6 +77,9 @@ public class MainBehavior : MonoBehaviour {
 	public UnityEngine.UI.Text message;
 	public UnityEngine.UI.Text scoreText;
 	public UnityEngine.UI.Text errorMarginText;
+	public UnityEngine.UI.Button continueButton;
+	public UnityEngine.UI.Button restartButton;
+	public UnityEngine.Canvas canvas;
 	ArrayList cubes = new ArrayList ();
 	public GameObject guidingHand;
 
@@ -126,9 +129,38 @@ public class MainBehavior : MonoBehaviour {
 			showMessage ("Coloca una sola mano cerca de tu dispositivo Leap Motion para empezar");
 			return;
 		} else if (gameState == GameState.NoHand) {
-			gameState = GameState.SettingUp;
-			guidingHand.transform.localRotation = initialGuidingHandRotation;
-			guidingHand.SetActive(true);
+			gameState = GameState.Menu;
+			// gameState = GameState.SettingUp;
+			// guidingHand.transform.localRotation = initialGuidingHandRotation;
+			// guidingHand.SetActive(true);
+		}
+
+		if (gameState == GameState.Menu) {
+			restartButton.enabled = true;
+			continueButton.enabled = true;
+
+			Finger indexFinger = null;
+			foreach (Finger finger in hand.Fingers) {
+				if (finger.Type == Finger.FingerType.TYPE_INDEX) {
+					indexFinger = finger;
+				}
+			}
+			Bone distalBone = indexFinger.Bone(Bone.BoneType.TYPE_DISTAL);
+			Ray testRay = Camera.main.ScreenPointToRay(unityVector(distalBone.Center));
+			RaycastHit hit;
+			if (Physics.Raycast(testRay, out hit)) {
+				Debug.Log("hey");
+				if (hit.collider == continueButton) {
+					continueButton.highlight = true;
+				} else if (hit.collider == restartButton) {
+					restartButton.highlight = true;
+				}
+				// log hit object
+			}
+			// 	if (hit.collider.gameObject.GetComponent()) {
+
+			// 	}
+			// }
 		}
 
 		// Placing hand at initial position
@@ -398,5 +430,9 @@ public class MainBehavior : MonoBehaviour {
 		} else {	// Regular cubes decrease score
 			score -= collisionPenalty;
 		}
+	}
+
+	Vector3 unityVector(Leap.Vector v) {
+		return new Vector3(v.x, v.y, v.z);
 	}
 }
