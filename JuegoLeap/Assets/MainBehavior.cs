@@ -39,8 +39,10 @@ public class MainBehavior : MonoBehaviour {
 	Leap.Vector initialHandPosition = new Leap.Vector(0, 160, 160);
 	float positionErrorMargin = 30f;
 	float errorMargin = 0.2f;
-	float cubeSpeed = 90;
-	float initialCubeZPosition = 100;
+    const float initialCubeSpeed = 90;
+	float cubeSpeed = initialCubeSpeed;
+    float cubeAcceleration = 500;
+    float initialCubeZPosition = 400;
 	float minCubeZPosition = -60;
 	Quaternion initialGuidingHandRotation;
 	bool didShowTutorial = false;
@@ -51,6 +53,9 @@ public class MainBehavior : MonoBehaviour {
 	float slowMotionTimeScaleFactor = 1.0f/6.0f;
 	int collisionPenalty = 20;
 	int slowMotionPenalty = 100;
+    bool shouldHideUI = false;
+    bool gameHasStarted = false;
+
 
 	// Time measurement
 	float lastMeasuredTime = 0;
@@ -75,13 +80,16 @@ public class MainBehavior : MonoBehaviour {
 	public GameObject cubeTemplate;
 	public GameObject blueCubeTemplate;
 	public UnityEngine.UI.Text message;
-	public UnityEngine.UI.Text scoreText;
+    public UnityEngine.UI.Text menuText;
+    public UnityEngine.UI.Text scoreText;
 	public UnityEngine.UI.Text errorMarginText;
-	public UnityEngine.UI.Button continueButton;
-	public UnityEngine.UI.Button restartButton;
-	public UnityEngine.Canvas canvas;
+    public GameObject continueButton;
+    public GameObject resetButton;
+    public GameObject startButton;
 	ArrayList cubes = new ArrayList ();
 	public GameObject guidingHand;
+    public GameObject road;
+    public GameObject difficultySlider;
 
 
 	void Start () {
@@ -91,7 +99,9 @@ public class MainBehavior : MonoBehaviour {
 		initialGuidingHandRotation = guidingHand.transform.localRotation;
 		cubeSpawningTime = initialCubeSpawningTime;
 		errorMarginText.text = errorMargin.ToString ();
-	}
+        resetGame();
+        showMessage("");
+    }
 	
 	void Update () {
 		Frame frame = controller.Frame();
@@ -125,46 +135,22 @@ public class MainBehavior : MonoBehaviour {
 		if (frame.Hands.Count != 1) {
 			gameState = GameState.NoHand;
 			guidingHand.SetActive(false);
-			resetGame();
-			showMessage ("Coloca una sola mano cerca de tu dispositivo Leap Motion para empezar");
+            setMenuHidden(false);
+            menuText.text = "Coloca una sola mano cerca de tu dispositivo Leap Motion para empezar";
 			return;
 		} else if (gameState == GameState.NoHand) {
 			gameState = GameState.Menu;
-			// gameState = GameState.SettingUp;
-			// guidingHand.transform.localRotation = initialGuidingHandRotation;
-			// guidingHand.SetActive(true);
-		}
+            setMenuHidden(false);
+        }
+        menuText.text = "";
 
-		if (gameState == GameState.Menu) {
-			restartButton.enabled = true;
-			continueButton.enabled = true;
-
-			Finger indexFinger = null;
-			foreach (Finger finger in hand.Fingers) {
-				if (finger.Type == Finger.FingerType.TYPE_INDEX) {
-					indexFinger = finger;
-				}
-			}
-			Bone distalBone = indexFinger.Bone(Bone.BoneType.TYPE_DISTAL);
-			Ray testRay = Camera.main.ScreenPointToRay(unityVector(distalBone.Center));
-			RaycastHit hit;
-			if (Physics.Raycast(testRay, out hit)) {
-				Debug.Log("hey");
-				if (hit.collider == continueButton) {
-					continueButton.highlight = true;
-				} else if (hit.collider == restartButton) {
-					restartButton.highlight = true;
-				}
-				// log hit object
-			}
-			// 	if (hit.collider.gameObject.GetComponent()) {
-
-			// 	}
-			// }
-		}
+        if (gameState == GameState.Menu) {
+            handleMenuPhase();
+        }
 
 		// Placing hand at initial position
 		if (gameState == GameState.SettingUp) {
+            gameHasStarted = true;
 			if (handIsInInitialPosition (hand)) {
 				showMessage ("");
 				guidingHand.SetActive (false);
@@ -186,8 +172,8 @@ public class MainBehavior : MonoBehaviour {
 			updateScore ();
 
 			if (!didShowPreTutorialMessage) {
-				showMessage("Esquiva los cubos blancos para no perder puntos\n" +
-					"Intenta tocar los cubos azules", preGestureTutorialDuration - 1);
+				showMessage("Esquiva los cubos blancos para no perder puntos. " +
+					"Intenta coger los cubos azules", preGestureTutorialDuration - 1);
 				didShowPreTutorialMessage = true;
 			}
 			if (Time.time - preGestureTutorialStartTime > preGestureTutorialDuration) {
@@ -200,7 +186,7 @@ public class MainBehavior : MonoBehaviour {
 			if (message.text == "") {
 				showMessage("Para realentizar el tiempo realiza el gesto de parada. Gastarás "
 				            + slowMotionPenalty.ToString() + " puntos");
-				wait(1.5f);
+				wait(2.5f);
 				return;
 			}
 
@@ -217,7 +203,8 @@ public class MainBehavior : MonoBehaviour {
 
 		// Playing
 		if (gameState == GameState.Playing) {
-			spawnCubes();
+            gameHasStarted = true;
+            spawnCubes();
 			moveCubes();
 			updateScore ();
 			updateDifficulty();
@@ -247,6 +234,104 @@ public class MainBehavior : MonoBehaviour {
 			}
 		}
 	}
+    
+    // Handles the Menu phase game logic
+    void handleMenuPhase () {
+        showMessage("");
+
+        // Handles cases for both reset and start buttons (same tag)
+        bool startButtonActivated = startButton.activeSelf;
+        bool resetButtonActivated = resetButton.activeSelf;
+        if (!gameHasStarted) {
+            startButton.SetActive(true);
+        } else {
+            resetButton.SetActive(true);
+        }
+        ButtonDemoToggle UIButton = GameObject.FindWithTag("ResetButton").GetComponent<ButtonDemoToggle>();
+        if (UIButton.ToggleState) {
+            if (shouldHideUI) {
+                shouldHideUI = false;
+                resetGame();
+                setMenuHidden(true);
+                gameState = GameState.SettingUp;
+                guidingHand.transform.localRotation = initialGuidingHandRotation;
+                guidingHand.SetActive(true);
+            } else {
+                shouldHideUI = true;
+                wait(0.5f);
+            }
+            if (!gameHasStarted) {
+                startButton.SetActive(startButtonActivated);
+            } else {
+                resetButton.SetActive(resetButtonActivated);
+            }
+            return;
+        }
+        if (!gameHasStarted) {
+            startButton.SetActive(startButtonActivated);
+        } else {
+            resetButton.SetActive(resetButtonActivated);
+        }
+
+        // Continue button handler
+        bool continueButtonActivated = continueButton.activeSelf;
+        if (gameHasStarted) {
+            continueButton.SetActive(true);
+            UIButton = GameObject.FindWithTag("ContinueButton").GetComponent<ButtonDemoToggle>();
+            if (UIButton.ToggleState) {
+                if (shouldHideUI) {
+                    shouldHideUI = false;
+                    setMenuHidden(true);
+                    gameState = GameState.Playing;
+                } else {
+                    shouldHideUI = true;
+                    wait(0.5f);
+                }
+                continueButton.SetActive(continueButtonActivated);
+                return;
+            }
+            continueButton.SetActive(continueButtonActivated);
+        }
+
+        // Difficulty slider handler
+        bool difficultySliderActivated = difficultySlider.activeSelf;
+        difficultySlider.SetActive(true);
+        SliderDemo UISlider = GameObject.FindWithTag("DifficultySlider").GetComponent<SliderDemo>();
+        cubeAcceleration = UISlider.GetSliderFraction() * 2000;
+        difficultySlider.SetActive(difficultySliderActivated);
+    }
+
+    // Hide/show menu and hide/show gameplay objects
+    void setMenuHidden (bool hidden) {
+        if (!gameHasStarted) {
+            setButtonHidden(hidden, startButton, "ResetButton");
+
+            continueButton.SetActive(false);
+            resetButton.SetActive(false);
+        } else {
+            setButtonHidden(hidden, continueButton, "ContinueButton");
+            setButtonHidden(hidden, resetButton, "ResetButton");
+
+            startButton.SetActive(false);
+        }
+
+        setCubesHidden(!hidden);
+        road.SetActive(hidden);
+        difficultySlider.SetActive(!hidden);
+
+        showMessage("");
+
+        Time.timeScale = hidden ? timeScale : 1;
+    }
+
+    // Hides/shows a button
+    void setButtonHidden (bool hidden, GameObject button, string tag) {
+        button.SetActive(true);
+        ButtonDemoToggle UIButton = GameObject.FindWithTag(tag).GetComponent<ButtonDemoToggle>();
+        UIButton.ToggleState = false;
+        UIButton.ButtonTurnsOff();
+        button.SetActive(!hidden);
+    }
 
 	// Keeps track of time and frames
 	void updateTime () {
@@ -291,12 +376,26 @@ public class MainBehavior : MonoBehaviour {
 
 	// Resets game variables to initial values
 	void resetGame() {
+        cubeSpeed = initialCubeSpeed;
 		timeScale = 1;
 		Time.timeScale = timeScale;
 		score = 0;
 		cubeSpawningTime = initialCubeSpawningTime;
 		slowMotionActive = false;
-	}
+
+        foreach (GameObject cube in cubes)
+        {
+            DestroyObject(cube);
+        }
+        cubes.Clear();
+    }
+
+    // Hides cubes
+    void setCubesHidden(bool hidden) {
+        foreach (GameObject cube in cubes) {
+            cube.SetActive(!hidden);
+        }
+    }
 
 	// Moves all cubes forward, destroys those which are no longer visible
 	void moveCubes() {
@@ -333,8 +432,7 @@ public class MainBehavior : MonoBehaviour {
 			return;
 		}
 		if (Time.time == lastMeasuredTime) {	// Just updated lastMeasuredTime, 0.5 sec passed
-			timeScale += 0.02f / timeScale;
-			Time.timeScale = timeScale;
+            cubeSpeed += cubeAcceleration / cubeSpeed;
 		}
 	}
 	
