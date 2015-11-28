@@ -22,6 +22,19 @@
 //    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 
+// Sound files used under creative commons license: 
+// http://creativecommons.org/licenses/by/3.0/legalcode
+//
+// 329093__mrauralization__wine-bottle-cork-pop.wav
+// by MrAuralization (http://www.freesound.org/people/MrAuralization/)
+// Mario_Jumping-Mike_Koenig-989896458.mp3
+// by Mike Koenig (http://soundbible.com/1601-Mario-Jumping.html)
+// buttonIn.mp3 and buttonOut.mp3 both trimmed versions of Tiny Button Push-SoundBible.com-513260752.mp3
+// original sound by Mike Koenig
+// 123437__anomalous-underdog__slowdown-short-down.wav
+// by anomalous_underdog (https://freesound.org/people/anomalous_underdog/)
+
+
 using UnityEngine;
 using System.Collections;
 using Leap;
@@ -91,6 +104,13 @@ public class MainBehavior : MonoBehaviour {
     public GameObject difficultySlider;
     public GameObject difficulty3DText;
 
+    public AudioClip crashSound;
+    public AudioClip bonusSound;
+    public AudioClip buttonInSound;
+    public AudioClip buttonOutSound;
+    public AudioClip slowMotionSound;
+    private AudioSource audioSource;
+
 
 	void Start () {
 		controller = new Controller();
@@ -99,9 +119,11 @@ public class MainBehavior : MonoBehaviour {
 		initialGuidingHandRotation = guidingHand.transform.localRotation;
 		cubeSpawningTime = initialCubeSpawningTime;
 		errorMarginText.text = errorMargin.ToString ();
+		audioSource = GetComponent<AudioSource>();
         resetGame();
         showMessage("");
     }
+    
 	
 	void Update () {
 		Frame frame = controller.Frame();
@@ -253,6 +275,7 @@ public class MainBehavior : MonoBehaviour {
                 guidingHand.transform.localRotation = initialGuidingHandRotation;
                 guidingHand.SetActive(true);
             } else {
+            	audioSource.PlayOneShot(buttonInSound, 1);
                 shouldHideUI = true;
                 wait(0.5f);
             }
@@ -280,6 +303,7 @@ public class MainBehavior : MonoBehaviour {
                     setMenuHidden(true);
                     gameState = GameState.Playing;
                 } else {
+                	audioSource.PlayOneShot(buttonInSound, 1);
                     shouldHideUI = true;
                     wait(0.5f);
                 }
@@ -352,6 +376,7 @@ public class MainBehavior : MonoBehaviour {
 		slowMotionActive = true;
 		Time.timeScale *= slowMotionTimeScaleFactor;
 		lastTimeGestureWasDetected = Time.time;
+		audioSource.PlayOneShot(slowMotionSound, 1);
 	}
 
 	// Creates a new cube if enough time has passed
@@ -521,8 +546,10 @@ public class MainBehavior : MonoBehaviour {
 		cubes.Remove (cube);
 		Destroy (cube);
 		if (((GameObject)cube).CompareTag ("BlueCube")) {	// Blue cubes increase score
+			audioSource.PlayOneShot(bonusSound, 1);
 			score += collisionPenalty;
 		} else {	// Regular cubes decrease score
+			audioSource.PlayOneShot(crashSound, 1);
 			score -= collisionPenalty;
 		}
 	}
