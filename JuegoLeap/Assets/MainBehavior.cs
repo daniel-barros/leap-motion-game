@@ -89,6 +89,7 @@ public class MainBehavior : MonoBehaviour {
 	public GameObject guidingHand;
     public GameObject road;
     public GameObject difficultySlider;
+    public GameObject difficulty3DText;
 
 
 	void Start () {
@@ -311,6 +312,7 @@ public class MainBehavior : MonoBehaviour {
         setCubesHidden(!hidden);
         road.SetActive(hidden);
         difficultySlider.SetActive(!hidden);
+        difficulty3DText.SetActive(!hidden);
 
         showMessage("");
 
