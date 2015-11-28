@@ -71,7 +71,7 @@ public class MainBehavior : MonoBehaviour {
 	float maxGestureDuration = 0.5f;
 	float lastTimeGestureWasDetected = -1;
 	float slowMotionDuration = 1;
-	float preGestureTutorialDuration = 5;
+	float preGestureTutorialDuration = 9;
 
 	
 	// IDE objects
@@ -108,7 +108,7 @@ public class MainBehavior : MonoBehaviour {
 		Hand hand = frame.Hands.Leftmost;
 
 		updateTime ();
-		updateUI ();
+		updateTexts ();
 
 		// Update error margin according to key press
 		if (Input.GetKeyDown("up")) {
@@ -167,8 +167,10 @@ public class MainBehavior : MonoBehaviour {
 
 			if (!didShowPreTutorialMessage) {
 				showMessage("Esquiva los cubos blancos para no perder puntos. " +
-					"Intenta coger los cubos azules", preGestureTutorialDuration - 1);
+					"Intenta coger los cubos azules", preGestureTutorialDuration/2 - 1);
 				didShowPreTutorialMessage = true;
+			} else if (message.text.Equals("")) {
+				showMessage("Para parar el juego, simplemente baja tu mano.", preGestureTutorialDuration/2 - 1);
 			}
 			if (Time.time - preGestureTutorialStartTime > preGestureTutorialDuration) {
 				gameState = GameState.GestureTutorial;
@@ -335,7 +337,7 @@ public class MainBehavior : MonoBehaviour {
 	}
 
 	// Updates texts in game UI
-	void updateUI () {
+	void updateTexts () {
 		// Message text
 		if (timeForMessageRemoval != -1 && timeForMessageRemoval <= Time.time) {
 			message.text = "";
