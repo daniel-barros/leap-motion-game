@@ -123,7 +123,7 @@ public class MainBehavior : MonoBehaviour {
         resetGame();
         showMessage("");
     }
-    
+
 	
 	void Update () {
 		Frame frame = controller.Frame();
@@ -167,94 +167,38 @@ public class MainBehavior : MonoBehaviour {
         menuText.text = "";
 
         if (gameState == GameState.Menu) {
-            handleMenuPhase();
+            handleMenuPhase(hand);
+            return;
         }
 
 		// Placing hand at initial position
 		if (gameState == GameState.SettingUp) {
-            gameHasStarted = true;
-			if (handIsInInitialPosition (hand)) {
-				showMessage ("");
-				guidingHand.SetActive (false);
-				gameState = GameState.PreGestureTutorial;
-				preGestureTutorialStartTime = Time.time;
-			}
+            handleSettingUpPhase(hand);
+            return;
 		}
 
 		// Play for a few seconds before gesture tutorial starts
 		if (gameState == GameState.PreGestureTutorial) {
-			spawnCubes();
-			moveCubes();
-			updateScore ();
-
-			if (!didShowPreTutorialMessage) {
-				showMessage("Esquiva los cubos blancos para no perder puntos. " +
-					"Intenta coger los cubos azules", preGestureTutorialDuration/2 - 1);
-				didShowPreTutorialMessage = true;
-			} else if (message.text.Equals("")) {
-				showMessage("Para parar el juego, simplemente baja tu mano.", preGestureTutorialDuration/2 - 1);
-			}
-			if (Time.time - preGestureTutorialStartTime > preGestureTutorialDuration) {
-				gameState = GameState.GestureTutorial;
-			}
+			handlePreTutorialPhase(hand);
+			return;
 		}
 
 		// Gesture tutorial shows how to activate slow motion
 		if (gameState == GameState.GestureTutorial) {
-			if (message.text == "") {
-				showMessage("Para realentizar el tiempo realiza el gesto de parada. Gastarás "
-				            + slowMotionPenalty.ToString() + " puntos");
-				wait(2.5f);
-				return;
-			}
-
-			guidingHand.SetActive(true);
-			rotateGuidingHand();
-			if (guidingHand.transform.rotation.x <= -0.75) {
-				guidingHand.SetActive(false);
-				gameState = GameState.Playing;
-				showMessage("");
-
-				activateSlowMotion();
-			}
+			handleTutorialPhase(hand);
+			return;
 		}
 
 		// Playing
 		if (gameState == GameState.Playing) {
-            gameHasStarted = true;
-            spawnCubes();
-			moveCubes();
-			updateScore ();
-			updateDifficulty();
-
-			// End slow motion if proper
-			if (Time.time - lastTimeGestureWasDetected > slowMotionDuration && 
-			    lastTimeGestureWasDetected != -1 && slowMotionActive) {
-				timeScale /= 1.5f;
-				Time.timeScale = timeScale;
-				slowMotionActive = false;
-			}
-
-			if (slowMotionActive) {
-				return;
-			}
-
-			// Gesture recognition
-			if (handIsInInitialGesturePosition (hand)) {
-				lastTimePalmNormalPointedDown = Time.time;
-			}
-			if (handIsInFinalGesturePosition (hand) && score >= 100) {
-				score -= slowMotionPenalty;
-				if (Time.time - lastTimePalmNormalPointedDown <= maxGestureDuration) {
-					activateSlowMotion();
-				}
-				lastTimePalmNormalPointedDown = -1;
-			}
+            handlePlayingPhase(hand);
+            return;
 		}
 	}
+
     
     // Handles the Menu phase game logic
-    void handleMenuPhase () {
+    void handleMenuPhase (Hand hand) {
         showMessage("");
 
         // Handles cases for both reset and start buttons (same tag)
@@ -319,6 +263,83 @@ public class MainBehavior : MonoBehaviour {
         SliderDemo UISlider = GameObject.FindWithTag("DifficultySlider").GetComponent<SliderDemo>();
         cubeAcceleration = UISlider.GetSliderFraction() * 2000;
         difficultySlider.SetActive(difficultySliderActivated);
+    }
+
+    void handleSettingUpPhase(Hand hand) {
+    	gameHasStarted = true;
+		if (handIsInInitialPosition (hand)) {
+			showMessage ("");
+			guidingHand.SetActive (false);
+			gameState = GameState.PreGestureTutorial;
+			preGestureTutorialStartTime = Time.time;
+		}
+    }
+
+    void handlePreTutorialPhase(Hand hand) {
+    	spawnCubes();
+		moveCubes();
+		updateScore ();
+
+		if (!didShowPreTutorialMessage) {
+			showMessage("Esquiva los cubos blancos para no perder puntos. " +
+				"Intenta coger los cubos azules", preGestureTutorialDuration/2 - 1);
+			didShowPreTutorialMessage = true;
+		} else if (message.text.Equals("")) {
+			showMessage("Para parar el juego, simplemente baja tu mano.", preGestureTutorialDuration/2 - 1);
+		}
+		if (Time.time - preGestureTutorialStartTime > preGestureTutorialDuration) {
+			gameState = GameState.GestureTutorial;
+		}
+    }
+
+    void handleTutorialPhase(Hand hand) {
+    	if (message.text == "") {
+			showMessage("Para realentizar el tiempo realiza el gesto de parada. Gastarás "
+			            + slowMotionPenalty.ToString() + " puntos");
+			wait(2.5f);
+			return;
+		}
+
+		guidingHand.SetActive(true);
+		rotateGuidingHand();
+		if (guidingHand.transform.rotation.x <= -0.75) {
+			guidingHand.SetActive(false);
+			gameState = GameState.Playing;
+			showMessage("");
+			activateSlowMotion();
+		}
+    }
+
+    void handlePlayingPhase(Hand hand) {
+    	gameHasStarted = true;
+        spawnCubes();
+		moveCubes();
+		updateScore ();
+		updateDifficulty();
+
+		// End slow motion if proper
+		if (Time.time - lastTimeGestureWasDetected > slowMotionDuration && 
+		    lastTimeGestureWasDetected != -1 && slowMotionActive) {
+			timeScale /= 1.5f;
+			Time.timeScale = timeScale;
+			slowMotionActive = false;
+		}
+
+		if (slowMotionActive) {
+			return;
+		}
+
+		// Gesture recognition
+		if (handIsInInitialGesturePosition (hand)) {
+			lastTimePalmNormalPointedDown = Time.time;
+		}
+		if (handIsInFinalGesturePosition (hand) && score >= 100) {
+			score -= slowMotionPenalty;
+			if (Time.time - lastTimePalmNormalPointedDown <= maxGestureDuration) {
+				activateSlowMotion();
+			}
+			lastTimePalmNormalPointedDown = -1;
+		}
     }
 
     // Hide/show menu and hide/show gameplay objects
