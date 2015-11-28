@@ -45,7 +45,6 @@ public class MainBehavior : MonoBehaviour {
     float initialCubeZPosition = 400;
 	float minCubeZPosition = -60;
 	Quaternion initialGuidingHandRotation;
-	bool didShowTutorial = false;
 	bool didShowPreTutorialMessage = false;
 	int score = 0;
 	float timeScale = 1;
@@ -154,14 +153,8 @@ public class MainBehavior : MonoBehaviour {
 			if (handIsInInitialPosition (hand)) {
 				showMessage ("");
 				guidingHand.SetActive (false);
-
-				if (didShowTutorial) {
-					gameState = GameState.Playing;
-				} else {
-					didShowTutorial = true;
-					gameState = GameState.PreGestureTutorial;
-					preGestureTutorialStartTime = Time.time;
-				}
+				gameState = GameState.PreGestureTutorial;
+				preGestureTutorialStartTime = Time.time;
 			}
 		}
 
