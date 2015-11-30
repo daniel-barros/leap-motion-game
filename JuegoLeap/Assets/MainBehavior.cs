@@ -265,6 +265,7 @@ public class MainBehavior : MonoBehaviour {
         difficultySlider.SetActive(difficultySliderActivated);
     }
 
+    // Handles the Setting Up phase game logic
     void handleSettingUpPhase(Hand hand) {
     	gameHasStarted = true;
 		if (handIsInInitialPosition (hand)) {
@@ -275,14 +276,15 @@ public class MainBehavior : MonoBehaviour {
 		}
     }
 
+    // Handles the Pre Tutorial phase game logic
     void handlePreTutorialPhase(Hand hand) {
     	spawnCubes();
 		moveCubes();
 		updateScore ();
 
 		if (!didShowPreTutorialMessage) {
-			showMessage("Esquiva los cubos blancos para no perder puntos. " +
-				"Intenta coger los cubos azules", preGestureTutorialDuration/2 - 1);
+			showMessage("Esquiva las nebulosas púrpuras para no perder puntos. " +
+				"Intenta coger la energía de los soles", preGestureTutorialDuration/2 - 1);
 			didShowPreTutorialMessage = true;
 		} else if (message.text.Equals("")) {
 			showMessage("Para parar el juego, simplemente baja tu mano.", preGestureTutorialDuration/2 - 1);
@@ -292,6 +294,7 @@ public class MainBehavior : MonoBehaviour {
 		}
     }
 
+    // Handles the Tutorial phase game logic
     void handleTutorialPhase(Hand hand) {
     	if (message.text == "") {
 			showMessage("Para realentizar el tiempo realiza el gesto de parada. Gastarás "
@@ -310,6 +313,7 @@ public class MainBehavior : MonoBehaviour {
 		}
     }
 
+    // Handles the Playing phase game logic
     void handlePlayingPhase(Hand hand) {
     	gameHasStarted = true;
         spawnCubes();
